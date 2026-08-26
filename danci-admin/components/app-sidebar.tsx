@@ -1,14 +1,15 @@
-"use client"
+"use client";
 
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation";
 import {
   BookOpenIcon,
   LogOutIcon,
   MailIcon,
   UsersIcon,
-} from "lucide-react"
+} from "lucide-react";
 
-import { useAuth } from "@/components/auth-provider"
+import { signOut } from "@/lib/actions";
+import type { AdminUser } from "@/db/schema";
 import {
   Sidebar,
   SidebarContent,
@@ -22,22 +23,25 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarSeparator,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-const navItems = [
-  { title: "单词书管理", url: "/books", icon: BookOpenIcon },
-  { title: "管理员管理", url: "/admin-users", icon: UsersIcon },
-]
+type NavItem = {
+  title: string;
+  url: string;
+  icon: typeof BookOpenIcon;
+};
 
-export function AppSidebar() {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { user, signout } = useAuth()
+export function AppSidebar({ user }: { user: AdminUser }) {
+  const pathname = usePathname();
+  const router = useRouter();
 
-  function handleLogout() {
-    signout()
-    router.replace("/signin")
-  }
+  const navItems: NavItem[] = [
+    { title: "单词书管理", url: "/books", icon: BookOpenIcon },
+    // 仅系统管理员可见管理员管理
+    ...(user.role === "super"
+      ? [{ title: "管理员管理", url: "/admin-users", icon: UsersIcon }]
+      : []),
+  ];
 
   return (
     <Sidebar>
@@ -53,7 +57,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
-                const Icon = item.icon
+                const Icon = item.icon;
                 return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
@@ -64,7 +68,7 @@ export function AppSidebar() {
                       <span>{item.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
+                );
               })}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -74,7 +78,7 @@ export function AppSidebar() {
         <SidebarSeparator />
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout}>
+            <SidebarMenuButton onClick={() => void signOut()}>
               <LogOutIcon />
               <span>退出登录</span>
             </SidebarMenuButton>
@@ -83,11 +87,11 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 px-2 pb-1">
           <MailIcon className="size-4 shrink-0 text-muted-foreground" />
           <span className="truncate text-xs text-muted-foreground">
-            {user?.email}
+            {user.email}
           </span>
         </div>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

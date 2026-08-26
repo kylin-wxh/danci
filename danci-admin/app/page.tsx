@@ -1,22 +1,19 @@
-"use client"
+import { redirect } from "next/navigation";
+import { count } from "drizzle-orm";
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { db } from "@/lib/db";
+import { adminUsers } from "@/db/schema";
+import { getSessionUser } from "@/lib/session";
 
-import { useAuth } from "@/components/auth-provider"
+export default async function Home() {
+  const user = await getSessionUser();
 
-export default function Home() {
-  const { user, loading } = useAuth()
-  const router = useRouter()
+  if (user) {
+    redirect(user.role === "super" ? "/admin-users" : "/books");
+  }
 
-  useEffect(() => {
-    if (loading) return
-    router.replace(user ? "/books" : "/signin")
-  }, [loading, user, router])
+  const [row] = await db.select({ count: count() }).from(adminUsers);
+  const hasAdmin = (row?.count ?? 0) > 0;
 
-  return (
-    <div className="flex min-h-svh items-center justify-center">
-      <p className="text-sm text-muted-foreground">加载中…</p>
-    </div>
-  )
+  redirect(hasAdmin ? "/signin" : "/signup");
 }
