@@ -176,6 +176,7 @@ export function AdminUsersClient({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editing={editing}
+        currentUserId={currentUserId}
       />
     </div>
   );
@@ -185,10 +186,12 @@ function AdminFormDialog({
   open,
   onOpenChange,
   editing,
+  currentUserId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editing: AdminUser | null;
+  currentUserId: string;
 }) {
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -197,6 +200,8 @@ function AdminFormDialog({
   const [submitting, setSubmitting] = React.useState(false);
 
   const isEdit = editing !== null;
+  // 编辑的是否为当前登录账号
+  const isSelf = editing?.id === currentUserId;
 
   React.useEffect(() => {
     if (!open) return;
@@ -285,6 +290,7 @@ function AdminFormDialog({
             <Select
               value={role}
               onValueChange={(value) => setRole(value as AdminRole)}
+              disabled={isSelf}
             >
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -294,6 +300,11 @@ function AdminFormDialog({
                 <SelectItem value="super">系统管理员</SelectItem>
               </SelectContent>
             </Select>
+            {isSelf && (
+              <p className="text-xs text-muted-foreground">
+                系统管理员不能修改自己的角色
+              </p>
+            )}
           </div>
 
           <DialogFooter>

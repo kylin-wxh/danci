@@ -121,6 +121,11 @@ export async function updateAdmin(input: {
   const guard = await guardSuperAdmin();
   if (!guard.ok) return guard;
 
+  // 系统管理员不能修改自己的角色，只能修改他人
+  if (guard.userId === input.id && input.role !== "super") {
+    return { ok: false, error: "系统管理员不能修改自己的角色" };
+  }
+
   await db
     .update(adminUsers)
     .set({ name: input.name.trim(), role: input.role, updatedAt: new Date() })
