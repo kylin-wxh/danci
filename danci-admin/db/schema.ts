@@ -1,4 +1,13 @@
-import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  bigserial,
+  integer,
+  json,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 export const adminRole = pgEnum("admin_role", ["super", "admin"]);
 export type AdminRole = "super" | "admin";
@@ -30,6 +39,18 @@ export const adminSessions = pgTable("admin_sessions", {
     .defaultNow()
     .notNull(),
 });
+
+// 单词表：已在 Supabase 后台创建，此处仅为 schema 映射
+export const words = pgTable("words", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  wordRank: integer("wordRank"),
+  headWord: text("headWord"),
+  content: json("content"),
+  bookId: text("bookId"),
+});
+
+export type Word = typeof words.$inferSelect;
+export type NewWord = typeof words.$inferInsert;
 
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type NewAdminUser = typeof adminUsers.$inferInsert;
