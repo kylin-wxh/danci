@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { adminUsers, type AdminRole } from "@/db/schema";
+import { adminUsers, books, words, type AdminRole } from "@/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { createSession, destroySession, getSessionUser } from "@/lib/session";
 
@@ -145,5 +145,89 @@ export async function deleteAdmin(input: { id: string }): Promise<ActionState> {
 
   await db.delete(adminUsers).where(eq(adminUsers.id, input.id));
   revalidatePath("/admin-users");
+  return { ok: true };
+}
+
+// ---------- 单词书 ----------
+
+function parseTags(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+export async function createBook(input: {
+  title: string;
+  wordCount: number;
+  coverUrl: string;
+  bookId: string;
+  tags: string;
+}): Promise<ActionState> {
+  const user = await getSessionUser();
+  if (!user) redirect("/signin");
+
+  await db.insert(books).values({
+    title: input.title.trim(),
+    wordCount: input.wordCount,
+    coverUrl: input.coverUrl.trim() || null,
+    bookId: input.bookId.trim(),
+    tags: parseTags(input.tags),
+  });
+
+  revalidatePath("/books");
+  return { ok: true };
+}
+
+export async function updateBook(input: {
+  id: string;
+  title: string;
+  wordCount: number;
+  coverUrl: string;
+  bookId: string;
+  tags: string;
+}): Promise<ActionState> {
+  const user = await getSessionUser();
+  if (!user) redirect("/signin");
+
+  await db
+    .update(books)
+    .set({
+      title: input.title.trim(),
+      wordCount: input.wordCount,
+      coverUrl: input.coverUrl.trim() || null,
+      bookId: input.bookId.trim(),
+      tags: parseTags(input.tags),
+      updatedAt: new Date(),
+    })
+    .where(eq(books.id, input.id));
+
+  revalidatePath("/books");
+  return { ok: true };
+}
+
+export async function deleteBook(input: { id: string }): Promise<ActionState> {
+  const user = await getSessionUser();
+  if (!user) redirect("/signin");
+
+  // 查出该单词书对应的 bookId
+  const [book] = await db
+    .select({ bookId: books.bookId })
+    .from(books)
+    .where(eq(books.id, input.id))
+    .limit(1);
+
+  if (!book) {
+    return { ok: false, error: "单词书不存在" };
+  }
+
+  await db.transaction(async (tx) => {
+    // 删除 words 表中该 bookId 的所有单词
+    await tx.delete(words).where(eq(words.bookId, book.bookId));
+    // 删除 books 表中的单词书记录
+    await tx.delete(books).where(eq(books.id, input.id));
+  });
+
+  revalidatePath("/books");
   return { ok: true };
 }

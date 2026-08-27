@@ -52,6 +52,25 @@ export const words = pgTable("words", {
 export type Word = typeof words.$inferSelect;
 export type NewWord = typeof words.$inferInsert;
 
+// 单词书表
+export const books = pgTable("books", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: text("title").notNull(),
+  wordCount: integer("word_count").notNull().default(0),
+  coverUrl: text("cover_url"),
+  bookId: text("book_id").notNull().unique(),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export type Book = typeof books.$inferSelect;
+export type NewBook = typeof books.$inferInsert;
+
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type NewAdminUser = typeof adminUsers.$inferInsert;
 export type AdminSession = typeof adminSessions.$inferSelect;
